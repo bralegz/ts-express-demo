@@ -5,6 +5,7 @@ let users: IUser[] = [
   {
     id: 1,
     name: "lucas",
+    age: 22,
     email: "lucas@gmail.com",
     active: true,
   },
@@ -16,6 +17,7 @@ export const createUserService = async (userData: UserDto): Promise<IUser> => {
   const newUser: IUser = {
     id,
     name: userData.name,
+    age: userData.age,
     email: userData.email,
     active: userData.active,
   };
