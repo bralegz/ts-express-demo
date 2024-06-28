@@ -1,38 +1,46 @@
 import IUser from "../interfaces/IUser";
 import UserDto from "../dto/userDto";
+import {  UserModel } from "../config/data-source";
+import { User } from "../entities/User";
+import { DeleteResult } from "typeorm";
 
-let users: IUser[] = [
-  {
-    id: 1,
-    name: "lucas",
-    age: 22,
-    email: "lucas@gmail.com",
-    active: true,
-  },
-];
 
-let id: number = 2;
+export const createUserService = async (userData: UserDto): Promise<User> => {
+  // const newUser: IUser = {
+  //   id,
+  //   name: userData.name,
+  //   age: userData.age,
+  //   email: userData.email,
+  //   active: userData.active,
+  // };
 
-export const createUserService = async (userData: UserDto): Promise<IUser> => {
-  const newUser: IUser = {
-    id,
-    name: userData.name,
-    age: userData.age,
-    email: userData.email,
-    active: userData.active,
-  };
+  // users.push(newUser);
+  // id++;
+  const createdUser = await UserModel.create(userData);
+  const savedUser = await UserModel.save(createdUser);
 
-  users.push(newUser);
-  id++;
-  return newUser;
+
+  return savedUser;
 };
 
-export const getUsersService = async (): Promise<IUser[]> => {
+export const getUsersService = async (): Promise<User[]> => {
+
+  const users = await UserModel.find();
   return users;
 };
 
-export const deleteUserService = async (id: number): Promise<void> => {
-  users = users.filter((user: IUser) => {
-    return user.id !== id;
-  });
+export const getUserByIdService = async (id: number): Promise<User | null> => {
+  const foundUser = await UserModel.findOneBy({id})
+
+  return foundUser
+}
+
+export const deleteUserService = async (id: number): Promise< void | Error> => {
+
+  try {
+    const userDeleted = await UserModel.delete(id);
+  } catch (error) {
+    throw new Error('User couldnt be deleted')
+  }
+  
 };

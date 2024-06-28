@@ -9,8 +9,11 @@ export const AppDataSource = new DataSource({
     password: "postgres",
     database: "demo_typeorm",
     synchronize: true,
-    logging: true,
+    logging: false, // don't log queries in the console
     entities: [User],
     subscribers: [],
     migrations: [],
 })
+
+
+export const UserModel = AppDataSource.getRepository(User);
