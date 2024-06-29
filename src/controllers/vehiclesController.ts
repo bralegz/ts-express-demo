@@ -17,12 +17,19 @@ export const createVehicle = async (req: Request, res: Response) => {
       year,
       userId
     });
+
+
     return res.status(201).json(newVehicle);
   } catch (error) {
+
     if (error instanceof Error) {
+
       res.status(400).json(error.message);
     } else {
+      
       res.status(500).json({ err: "Unknown error" });
     }
+
   }
 };
+

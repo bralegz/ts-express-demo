@@ -1,8 +1,6 @@
-import IUser from "../interfaces/IUser";
 import UserDto from "../dto/userDto";
 import { UserModel } from "../config/data-source";
 import { User } from "../entities/User";
-import { DeleteResult } from "typeorm";
 
 export const createUserService = async (userData: UserDto): Promise<User> => {
   const createdUser = await UserModel.create(userData);
@@ -14,7 +12,7 @@ export const createUserService = async (userData: UserDto): Promise<User> => {
 export const getUsersService = async (): Promise<User[]> => {
   const users = await UserModel.find({
     relations: {
-      vehicle: true
+      vehicles: true
     }
   });
   return users;

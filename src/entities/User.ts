@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Vehicle } from "./Vehicle";
 
 @Entity({
@@ -20,7 +20,10 @@ export class User {
   @Column()
   active: boolean;
 
-  @OneToOne(() => Vehicle)
-  @JoinColumn()
-  vehicle: Vehicle; //it will add a column called vehicleId
+  // @OneToOne(() => Vehicle)
+  // @JoinColumn()
+  // vehicle: Vehicle; //it will add a column called vehicleId
+
+  @OneToMany(() => Vehicle, (vehicle) => vehicle.user)
+  vehicles: Vehicle[];
 }
