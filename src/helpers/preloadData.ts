@@ -1,51 +1,120 @@
-import { AppDataSource, UserModel } from "../config/data-source";
+import { AppDataSource, UserModel, VehicleModel } from "../config/data-source";
 
-const user1 = {
-  name: "John Doe",
-  email: "john.doe@example.com",
-  age: 30,
-  active: true
-};
+const preloadUsers = [
+  {
+    name: "John Doe",
+    email: "john.doe@example.com",
+    age: 30,
+    active: true
+  },
+  {
+    name: "Jane Smith",
+    email: "jane.smith@example.com",
+    age: 25,
+    active: false
+  },
+  {
+    name: "Alice Johnson",
+    email: "alice.johnson@example.com",
+    age: 28,
+    active: true
+  },
+  {
+    name: "Bob Brown",
+    email: "bob.brown@example.com",
+    age: 32,
+    active: false
+  }
+];
 
-const user2 = {
-  name: "Jane Smith",
-  email: "jane.smith@example.com",
-  age: 25,
-  active: false
-};
+const preloadVehicles = [
+  {
+    brand: "Toyota",
+    color: "Red",
+    model: "Corolla",
+    year: 2020,
+    userId: 1
+  },
+  {
+    brand: "Honda",
+    color: "Blue",
+    model: "Civic",
+    year: 2018,
+    userId: 1
+  },
+  {
+    brand: "Ford",
+    color: "Black",
+    model: "Mustang",
+    year: 2021,
+    userId: 4
+  },
+  {
+    brand: "Chevrolet",
+    color: "White",
+    model: "Camaro",
+    year: 2019,
+    userId: 3
+  }
+];
 
-const user3 = {
-  name: "Alice Johnson",
-  email: "alice.johnson@example.com",
-  age: 28,
-  active: true
-};
-
-const user4 = {
-  name: "Bob Brown",
-  email: "bob.brown@example.com",
-  age: 32,
-  active: false
-};
-
-export const preloadData = async () => {
+export const preloadUserData = async () => {
   //group together all the operations you want to be part of the transaction
   await AppDataSource.manager.transaction(async (transactionalEntityManager) => {
-    const checkUsersDatabase = await UserModel.find();
+    const users = await UserModel.find();
 
-    if (checkUsersDatabase.length) return console.log("Data already preloaded");
+    if (users.length) return console.log("Data already preloaded");
 
-    const userOne = await UserModel.create(user1);
-    const userTwo = await UserModel.create(user2);
-    const userThree = await UserModel.create(user3);
-    const userFour = await UserModel.create(user4);
-
+    // for await will allow us to perform async operations inside a for loop
+    //this loop will go through all of the users in the array and save each one individually
     //if one of these saves fails, it won't save any of them
-    await transactionalEntityManager.save(userOne);
-    await transactionalEntityManager.save(userTwo);
-    await transactionalEntityManager.save(userThree);
-    await transactionalEntityManager.save(userFour);
+    for await (const user of preloadUsers) {
+      const newUser = await UserModel.create(user);
+      await transactionalEntityManager.save(newUser);
+    }
 
-    console.log("Data preloaded successfully");
+    console.log("User data preloaded successfully");
   });
+};
+
+export const preloadVehiclesData = async () => {
+  const queryRunner = AppDataSource.createQueryRunner();
+  await queryRunner.connect();
+
+  const vehiclePromises = preloadVehicles.map(async (vehicle) => {
+    const newVehicle = VehicleModel.create(vehicle);
+    await queryRunner.manager.save(newVehicle);
+
+    const user = await UserModel.findOneBy({ id: vehicle.userId });
+
+    //an error inside a promise will reject the promise
+    if (!user) throw Error("Couldn't add user to vehicle");
+
+    newVehicle.user = user;
+    await queryRunner.manager.save(newVehicle);
+  });
+
+  try {
+    /*
+    The Promise.all() static method takes an iterable of promises as input and returns a single Promise. This returned promise fulfills when all of the input's promises fulfill (including when an empty iterable is passed), with an array of the fulfillment values. It rejects when any of the input's promises rejects, with this first rejection reason.
+  */
+    await queryRunner.startTransaction();
+    await Promise.all(vehiclePromises);
+    console.log("Vehicle data preloaded successfully");
+    await queryRunner.commitTransaction();
+
+  } catch (error) {
+    if (error instanceof Error) {
+      console.log(error.message);
+    } else {
+      console.log("Unknown error");
+    }
+
+    //rollback the transactions if there was an error
+    await queryRunner.rollbackTransaction();
+  } finally {
+    //All started transactions must finsih, Either with a rollback or with a commit and then release.
+    console.log("Preload attempt completed");
+    await queryRunner.release();
+  }
 };

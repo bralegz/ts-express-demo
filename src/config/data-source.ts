@@ -9,7 +9,7 @@ export const AppDataSource = new DataSource({
     username: "postgres",
     password: "postgres",
     database: "demo_typeorm",
-    // dropSchema: true, //erase database content when the server starts
+    dropSchema: true, //erase database content when the server starts
     synchronize: true,
     logging: false, // don't log queries in the console
     entities: [User, Vehicle],
