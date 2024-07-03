@@ -1,4 +1,4 @@
-import { UserModel, VehicleModel } from "../config/data-source";
+import { AppDataSource, UserModel, VehicleModel } from "../config/data-source";
 import { CreateVehicleDto } from "../dto/CreateVehicleDto";
 import { Vehicle } from "../entities/Vehicle";
 
@@ -11,31 +11,33 @@ export const getVehiclesService = async (): Promise<Vehicle[]> => {
   return vehicles;
 };
 
-export const createVehicleService = async (vehicle: CreateVehicleDto): Promise<Vehicle> => {
-  const newVehicle = await VehicleModel.create(vehicle);
-  await VehicleModel.save(newVehicle);
+export const createVehicleService = async (vehicle: CreateVehicleDto): Promise<Vehicle | void> => {
+  const queryRunner = AppDataSource.createQueryRunner();
+  await queryRunner.connect();
 
-  //once the vehicle is created we need to specify the relation with the user
-  const user = await UserModel.findOneBy({
-    id: vehicle.userId // find the user with the id specified in the vehicle creation
-  });
+  try {
+    await queryRunner.startTransaction();
+    const newVehicle = await VehicleModel.create(vehicle);
+    await queryRunner.manager.save(newVehicle);
 
-  //if user is different than null then save the new vehicle into the 'vehicle' property in users table
-  // if (user) {
-  //   user.vehicle = newVehicle;
-  //   await UserModel.save(user);
-  // } else {
-  //   throw new Error("User doesn't exist")
-  // }
+    const user = await UserModel.findOneBy({ id: vehicle.userId });
 
-  //if user exists add the user to the newVehicle reference
-  if (user) {
-    newVehicle.user = user; //add the user to the vehicle property
+    if (!user) throw Error("User does not exist");
 
-    await VehicleModel.save(newVehicle); //save the changes
-  } else {
-    throw new Error("User doesn't exist");
+    newVehicle.user = user;
+    await queryRunner.manager.save(newVehicle);
+    await queryRunner.commitTransaction();
+
+    return newVehicle;
+  } catch (error) {
+    await queryRunner.rollbackTransaction();
+
+    if (error instanceof Error) {
+      throw Error(error.message);
+    } else {
+      throw Error("Unknown error")
+    }
+  } finally {
+    await queryRunner.release();
   }
-
-  return newVehicle;
 };
