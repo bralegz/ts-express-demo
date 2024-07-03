@@ -22,9 +22,8 @@ export const createVehicleService = async (vehicle: CreateVehicleDto): Promise<V
     const newVehicle = await VehicleRepository.create(vehicle);
     await queryRunner.manager.save(newVehicle);
 
-    const user = await UserRepository.findOneBy({ id: vehicle.userId });
+    const user = await UserRepository.findById(vehicle.userId);
 
-    if (!user) throw Error("User does not exist");
 
     newVehicle.user = user;
     await queryRunner.manager.save(newVehicle);
