@@ -1,16 +1,16 @@
 import UserDto from "../dto/userDto";
-import { UserModel } from "../config/data-source";
+import UserRepository from "../repositories/UserRepository";
 import { User } from "../entities/User";
 
 export const createUserService = async (userData: UserDto): Promise<User> => {
-  const createdUser = await UserModel.create(userData);
-  const savedUser = await UserModel.save(createdUser);
+  const createdUser = await UserRepository.create(userData);
+  const savedUser = await UserRepository.save(createdUser);
 
   return savedUser;
 };
 
 export const getUsersService = async (): Promise<User[]> => {
-  const users = await UserModel.find({
+  const users = await UserRepository.find({
     relations: {
       vehicles: true
     }
@@ -19,14 +19,14 @@ export const getUsersService = async (): Promise<User[]> => {
 };
 
 export const getUserByIdService = async (id: number): Promise<User | null> => {
-  const foundUser = await UserModel.findOneBy({ id });
+  const foundUser = await UserRepository.findOneBy({ id });
 
   return foundUser;
 };
 
 export const deleteUserService = async (id: number): Promise<void | Error> => {
   try {
-    const userDeleted = await UserModel.delete(id);
+    const userDeleted = await UserRepository.delete(id);
   } catch (error) {
     throw new Error("User couldnt be deleted");
   }

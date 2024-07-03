@@ -1,4 +1,6 @@
-import { AppDataSource, UserModel, VehicleModel } from "../config/data-source";
+import { AppDataSource } from "../config/data-source";
+import UserRepository from "../repositories/UserRepository";
+import VehicleRepository from "../repositories/VehicleRepository";
 
 const preloadUsers = [
   {
@@ -61,7 +63,7 @@ const preloadVehicles = [
 export const preloadUserData = async () => {
   //group together all the operations you want to be part of the transaction
   await AppDataSource.manager.transaction(async (transactionalEntityManager) => {
-    const users = await UserModel.find();
+    const users = await UserRepository.find();
 
     if (users.length) return console.log("Data already preloaded");
 
@@ -69,7 +71,7 @@ export const preloadUserData = async () => {
     //this loop will go through all of the users in the array and save each one individually
     //if one of these saves fails, it won't save any of them
     for await (const user of preloadUsers) {
-      const newUser = await UserModel.create(user);
+      const newUser = await UserRepository.create(user);
       await transactionalEntityManager.save(newUser);
     }
 
@@ -82,10 +84,10 @@ export const preloadVehiclesData = async () => {
   await queryRunner.connect();
 
   const vehiclePromises = preloadVehicles.map(async (vehicle) => {
-    const newVehicle = VehicleModel.create(vehicle);
+    const newVehicle = VehicleRepository.create(vehicle);
     await queryRunner.manager.save(newVehicle);
 
-    const user = await UserModel.findOneBy({ id: vehicle.userId });
+    const user = await UserRepository.findOneBy({ id: vehicle.userId });
 
     //an error inside a promise will reject the promise
     if (!user) throw Error("Couldn't add user to vehicle");
@@ -102,7 +104,6 @@ export const preloadVehiclesData = async () => {
     await Promise.all(vehiclePromises);
     console.log("Vehicle data preloaded successfully");
     await queryRunner.commitTransaction();
-
   } catch (error) {
     if (error instanceof Error) {
       console.log(error.message);
